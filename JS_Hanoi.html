@@ -1,0 +1,738 @@
+<html>
+<head>
+    <title>Hanoi</title>
+<script>
+var fieldWidth=3;
+var fieldHeight=3;
+var movingRing=0;
+var moveCount=0;
+var instruction=0;
+var field;
+var solution=[];
+var lastRan=0;
+function initialiseField()
+{
+    field=Array(fieldWidth);
+    for(var i=0; i<fieldWidth; i=i+1)
+    {
+        field[i]=Array(fieldHeight);
+    }
+    for(var i=0; i<fieldWidth; i=i+1)
+    {
+        for(var j=0; j<fieldHeight; j=j+1)
+        {
+            field[i][j]=0;
+        }
+    }
+    for(var i=1; i<fieldHeight+1; i=i+1)
+    {
+        field[0][i-1]=i;
+    }
+    render();
+}
+function render()
+{
+    var deadHeight=window.innerHeight/5;
+    var barHeight=window.innerHeight*3/5;
+    var barWidth=barHeight/20; //why??
+    var barSpace=window.innerWidth/4;
+    var ringHeight=barHeight/(fieldHeight+1);
+    var table=document.getElementById("table");
+    table.style.top=deadHeight+ringHeight+"px";
+    table.style.height=barHeight-ringHeight+"px";
+    for(var i=0; i<fieldHeight; i=i+1)
+    {
+        var tr=document.getElementById("row"+i);
+        tr.style.display="table-row";
+    }
+    for(var i=fieldHeight; i<6; i=i+1)
+    {
+        var tr=document.getElementById("row"+i);
+        tr.style.display="none";
+    }
+    for(var i=0; i<fieldHeight; i=i+1)
+    {
+        var tr=document.getElementById("row"+i);
+        tr.style.height=ringHeight;
+    }
+    for(var i=0; i<3; i=i+1)
+    {
+        var bar=document.getElementById("bar"+i);
+        bar.style.height=barHeight;
+        bar.style.top=deadHeight;
+        bar.style.left=(barSpace-(barWidth/2))*(i+1);
+    }
+    for(var i=0; i<fieldWidth; i=i+1)
+    {
+        for(var j=0; j<fieldHeight; j=j+1)
+        {
+            var id=field[i][j];
+            if(id!=0)
+            {
+                var ring=document.getElementById("ring"+id);
+                ring.style.width=barSpace-((fieldHeight-id)*((barSpace*2/3)/fieldHeight));
+                ring.style.height=ringHeight;
+            }
+        }
+    }
+}
+function instructions()
+{
+    instruction=instruction+1;
+    if(instruction==1)
+    {
+        document.getElementById("inst1").style.display="none";
+        document.getElementById("inst2").style.display="block";
+    }
+    if(instruction==2)
+    {
+        document.getElementById("inst2").style.display="none";
+        document.getElementById("inst3").style.display="block";
+        document.getElementById("next").style.display="none";
+        document.getElementById("numbers").style.display="block";
+    }
+}
+function changeHeight(height)
+{
+    fieldHeight=height;
+    document.getElementById("instruction").style.display="none";
+    document.getElementById("inst3").style.display="none";
+    document.getElementById("numbers").style.display="none";
+    initialiseField();
+}
+function drag(ev, ringID)
+{
+    var ring=document.getElementById("ring"+ringID);
+    if(ring.draggable==true)
+    { 
+        ev.dataTransfer.setData("ring", ev.target.id);
+        movingRing=ringID;
+    }
+    else
+    {
+        ev.preventDefault();
+    }
+}
+function allowDrop(ev)
+{
+    ev.preventDefault();
+}
+function drop(ev, row, column)
+{
+    ev.preventDefault();
+    if(field[row][column]==0)
+    {
+        if(column==fieldHeight-1 || field[row][column+1]!=0)
+        {
+            if(column==fieldHeight-1 || field[row][column+1]>movingRing)
+            {
+                var data = ev.dataTransfer.getData("ring");
+                ev.target.appendChild(document.getElementById(data));
+                var ringHeight=(window.innerHeight*3/5)/(fieldHeight+1);
+                for(var i=0; i<fieldHeight; i=i+1)
+                {
+                    var tr=document.getElementById("row"+i);
+                    tr.style.height=ringHeight;
+                }
+                for(var i=0; i<fieldWidth; i=i+1)
+                {
+                    for(var j=0; j<fieldHeight; j=j+1)
+                    {
+                        if(field[i][j]==movingRing)
+                        {
+                            field[i][j]=0;
+                        }
+                    }
+                }
+                field[row][column]=movingRing;
+                score("human");
+                dragRules();
+            }
+        }
+    }
+    var ringStatus=[];
+    for(i=1; i<fieldHeight+1; i=i+1)
+    {
+        var dragStatus=document.getElementById("ring"+i).draggable;
+        ringStatus[ringStatus.length]={i, dragStatus};
+    }
+}
+function dragRules()
+{
+    for(var i=0; i<fieldWidth; i=i+1)
+    {
+        for(var j=0; j<fieldHeight; j=j+1)
+        {
+            var id=field[i][j];
+            if(id!=0)
+            {
+                var ring=document.getElementById("ring"+(id));
+                if(j==0 || field[i][j-1]==0)
+                {
+                    ring.setAttribute("draggable", true);
+                }
+                else
+                {
+                    ring.setAttribute("draggable", false);
+                }
+            }
+        }
+    }
+}
+function score(player)
+{
+    moveCount=moveCount+1;
+    document.getElementById("moves").innerText="Move count: "+moveCount;
+    if(player=="human")
+    {
+        var gameDone=true;
+        for(var i=1; i<fieldHeight+1; i=i+1)
+        {
+            if(field[2][i-1]!=i)
+            {
+                gameDone=false;
+            }
+        }
+        if(gameDone==true)
+        {
+            document.getElementById("instruction").style.display="block";
+            var message1=document.getElementById("inst1");
+            message1.style.display="block";
+            message1.innerText="Congratulations!";
+            var message2=document.getElementById("finalMessage");
+            message2.style.display="block";
+            message2.innerText="You finished in "+moveCount+" moves!";
+            document.getElementById("playAgain").style.display="block";
+            document.getElementById("v-button").style.display="block";
+        }
+    }
+}
+function endMessage()
+{
+    document.getElementById("instruction").style.display="block";
+    document.getElementById("playAgain").style.display="block";
+    document.getElementById("v-button").style.display="block";
+    document.getElementById("voila").style.display="block";
+}
+function fillList(list, value, id1, id2)
+{
+    list[list.length]={"moves": value, "current": id1, "previous": id2};
+}
+function fewestMoves(list)
+{
+    var fewest=list[0].moves;
+    var targetField=list[0].current;
+    for(var i=0; i<list.length; i=i+1)
+    {
+        if(list[i].moves<fewest)
+        {
+            fewest=list[i].moves;
+            targetField=list[i].current;
+        }
+    }
+    return targetField;
+}
+function check(list, id)
+{
+    var result=false;
+    for(i=0; i<list.length; i=i+1)
+    {
+        if(list[i].current==id)
+        {
+            result=true;
+        }
+    }
+    return result;
+}
+function find(list, id)
+{
+    var result=0;
+    for(i=0; i<list.length; i=i+1)
+    {
+        if(list[i].current==id)
+        {
+            result=list[i];
+        }
+    }
+    return result;
+}
+function Delete(list, id)
+{
+    var newList=[];
+    for(i=0; i<list.length; i=i+1)
+    {
+        if(list[i].current!=id)
+        {
+            newList[newList.length]=list[i];
+        }
+    }
+    return newList;
+}
+function fieldToID(array)
+{
+    var value=0;
+    for(var i=0; i<fieldWidth; i=i+1)
+    {
+        for(var j=0; j<fieldHeight; j=j+1)
+        {
+            value=value*10;
+            var cell=array[i][j];
+            value=value+cell;
+        }
+    }
+    return value;
+}
+function IDtoField(id)
+{
+    newField=new Array(fieldWidth);
+    for(var i=0; i<fieldWidth; i=i+1)
+    {
+        newField[i]=Array(fieldHeight);
+    }
+    var divideBy=Math.pow(10, (fieldWidth*fieldHeight));
+    for(var i=0; i<fieldWidth; i=i+1)
+    {
+        for(var j=0; j<fieldHeight; j=j+1)
+        {
+            divideBy=divideBy/10;
+            var value=Math.floor(id/divideBy);
+            newField[i][j]=value;
+            id=id-(value*divideBy);
+        }
+    }
+    return newField;
+}
+function autoMove(ringID, toRow, toColumn)
+{
+    var ring=document.getElementById("ring"+ringID);
+    var toCell=document.getElementById(toColumn+"-"+toRow);
+    toCell.appendChild(ring);
+}
+function help()
+{
+    if(solution.length==0)
+    {
+        idealField=new Array(fieldWidth);
+        for(var i=0; i<fieldWidth; i=i+1)
+        {
+            idealField[i]=Array(fieldHeight);
+        }
+        for(var i=0; i<fieldWidth; i=i+1)
+        {
+            for(var j=0; j<fieldHeight; j=j+1)
+            {
+                idealField[i][j]=0;
+            }
+        }
+        for(var i=1; i<fieldHeight+1; i=i+1)
+        {
+            idealField[2][i-1]=i;
+        }
+        var idealFieldID=fieldToID(idealField);
+        var tempList=[];
+        var newList=[];
+        var fieldID=fieldToID(field);
+        fillList(tempList, 0, fieldID, fieldID);
+        fillList(newList, 0, fieldID, fieldID);
+        var exit=false;
+        var moves=1;
+        do
+        {
+            var currentID=fewestMoves(newList);
+            var current=IDtoField(currentID);
+            var goalReached=true;
+            for(var i=1; i<fieldHeight+1; i=i+1)
+            {
+                if(current[2][i-1]!=i)
+                {
+                    goalReached=false;
+                }
+            }
+            if(goalReached==true)
+            {
+                exit=true;
+            }
+            else
+            {
+                for(var i=0; i<fieldWidth; i=i+1)
+                {
+                    for(var j=0; j<fieldHeight; j=j+1)
+                    {
+                        var fromCell=current[i][j];
+                        if(fromCell!=0)
+                        {
+                            if(j==0 || current[i][j-1]==0)
+                            {
+                                for(var k=0; k<fieldWidth; k=k+1)
+                                {
+                                    for(var l=fieldHeight-1; l>=0; l=l-1)
+                                    {
+                                        var toCell=current[k][l];
+                                        if(toCell==0)
+                                        {
+                                            if(l==fieldHeight-1 || current[k][l+1]>fromCell)
+                                            {
+                                                var tempFieldID=currentID;
+                                                var tempField=IDtoField(tempFieldID);
+                                                tempField[i][j]=0;
+                                                tempField[k][l]=fromCell;
+                                                var tempFieldID=fieldToID(tempField);
+                                                if(check(tempList, tempFieldID)==false)
+                                                {
+                                                    fillList(tempList, moves, tempFieldID, currentID);
+                                                    fillList(newList, moves, tempFieldID, currentID);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                l=0;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                j=fieldHeight;
+                            }
+                        }
+                    }
+                }
+                var list=Delete(newList, currentID);
+                newList=list;
+                moves=moves+1;
+            }
+        }
+        while(exit==false)
+        solution[0]=find(tempList, idealFieldID);
+        while(solution[solution.length-1].moves>1)
+        {
+            var previous=find(tempList, solution[solution.length-1].previous);
+            solution[solution.length]=previous;
+        }
+        field=IDtoField(solution[solution.length-1].current);
+        for(var i=0; i<fieldWidth; i=i+1)
+        {
+            for(var j=0; j<fieldHeight; j=j+1)
+            {
+                var ring=field[i][j];
+                if(ring!=0)
+                {
+                    autoMove(ring, i, j);
+                }
+            }
+        }
+        score("AI");
+        var newSolution=Delete(solution, solution[solution.length-1].current);
+        solution=newSolution;
+        setTimeout(help, 800);
+        return;
+    }
+    if(solution.length!=0)
+    {
+        if(solution.length==1)
+        {
+            field=IDtoField(solution[solution.length-1].current);
+            for(var i=0; i<fieldWidth; i=i+1)
+            {
+                for(var j=0; j<fieldHeight; j=j+1)
+                {
+                    var ring=field[i][j];
+                    if(ring!=0)
+                    {
+                        autoMove(ring, i, j);
+                    }
+                }
+            }
+            score("AI");
+            endMessage();
+            return;
+        }
+        field=IDtoField(solution[solution.length-1].current);
+        for(var i=0; i<fieldWidth; i=i+1)
+        {
+            for(var j=0; j<fieldHeight; j=j+1)
+            {
+                var ring=field[i][j];
+                if(ring!=0)
+                {
+                    autoMove(ring, i, j);
+                }
+            }
+        }
+        score("AI");
+        var newSolution=Delete(solution, solution[solution.length-1].current);
+        solution=newSolution;
+        setTimeout(help, 800);
+    } 
+}
+</script>
+<style>
+    #instruction
+    {
+        position: absolute;
+        display: block;
+        z-index: 2;
+        left: 50%;
+        top: 5%;
+        width: 500px;
+        height: auto;
+        margin-left: -268px;
+        padding: 20;
+        background-color:white;
+        color: black;
+        text-align: center;
+        font-family: Arial, sans-serif;
+        font-size: 24;
+        border: 2px;
+        border-style: solid;
+        border-color: black;
+    }
+    #inst1, #inst2, #voila
+    {
+        margin-top: 10px;
+    }
+    button
+    {
+        padding: 15px 25px;
+        background-color: DDDDDD;
+        color: black;
+        text-align: center;
+        font-size: 20;
+        cursor: pointer;
+        border: 1px;
+        border-style: solid;
+        border-color: black;
+    }
+    button:hover
+    {
+        background-color: BBBBBB;
+    }
+    .number
+    {
+        display: inline-block;
+        margin-left: 10px;
+    }
+    .yep
+    {
+        padding: 15px 25px;
+        background-color: DDDDDD;
+        color: black;
+        text-align: center;
+        font-size: 20;
+        cursor: pointer;
+        border: 1px;
+        border-style: solid;
+        border-color: black;
+        text-decoration: none;
+    }
+    .yep:hover
+    {
+        background-color: BBBBBB;
+    }
+    #scoreBoard
+    {
+        position: absolute;
+        display: block;
+        z-index: 2;
+        left: 80%;
+        top: 5%;
+        width: 200px;
+        height: auto;
+        background-color:white;
+        color: black;
+        text-align: center;
+        font-family: Arial, sans-serif;
+        font-size: 20;
+        border: 2px;
+        border-style: solid;
+        border-color: black;
+        padding: 0px;
+    }
+    .score
+    {
+        margin: 5px;
+    }
+    #help
+    {
+        position: absolute;
+        display: block;
+        z-index: 2;
+        left: 80%;
+        top: 15%;
+        width: 200px;
+        height: auto;
+        background-color:white;
+        color: black;
+        text-align: center;
+        font-family: Arial, sans-serif;
+        font-size: 20;
+        border: 2px;
+        border-style: solid;
+        border-color: black;
+        padding: 0px;
+    }
+    #help:hover
+    {
+        background-color: DDDDDD;
+        cursor: pointer;
+    }
+    #deadSpace
+    {
+        position: absolute;
+        display: block;
+        top: 80%;
+        width: 100%;
+        height: 25%;
+        background-color:black;
+        margin: 0px;
+        padding: 0px;
+    }
+    .bars
+    {
+        position: absolute;
+        width: auto;
+    }
+    table
+    {
+        position: absolute;
+        bottom: 20%;
+        width: 75%;
+        margin-left: 12.5%;
+        margin-right: 12.5%;
+        border-collapse: collapse;
+    }
+    tbody
+    {
+        display: table;
+        width: 100%;
+        height: 100%;
+    }
+    td
+    {
+        width: 33%;
+        border: 0px;
+        border-style: solid;
+        border-color: black;
+        vertical-align: top;
+        margin: 0px;
+        padding: 0px;
+    }
+    td img
+    {
+        z-index: 1;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+</style>
+</head>
+<body onload="initialiseField()" style="margin: 0px" onresize="render()">
+    <img src="hanoi-bar.png" id="bar0" class="bars">
+    <img src="hanoi-bar.png" id="bar1" class="bars">
+    <img src="hanoi-bar.png" id="bar2" class="bars">
+    <div id="instruction">
+        <p id="inst1" style="display: block">
+            Welcome to my Hanoi Game!</br></br>
+            Your task is to move the rings from the left pole to the right pole, in as few moves as possible.
+        </p>
+        <p id="inst2" style="display: none">
+            You can only move the top ring</br>from each pole, and...</br></br>
+            You can't put a larger ring on</br>top of a smaller ring.
+        </p>
+        <p id="next" style="display: block; margin-bottom: 0px">
+            <button onclick="instructions()">Next</button>
+        </p>
+        <p id="inst3" style="display: none">
+            Now, let's decide how many rings you want!</br></br>
+            Click on a number to start the game!
+        </p>
+        <p id="numbers" style="display: none; margin-bottom: 0px">
+            <button class="number" onclick="changeHeight(3)">3</button>
+            <button class="number" onclick="changeHeight(4)">4</button>
+            <button class="number" onclick="changeHeight(5)">5</button>
+            <button class="number" onclick="changeHeight(6)">6</button>
+        </p>
+        <p id="finalMessage" style="display: none; margin-bottom: 10px">
+        </p>
+        <p id="voila" style="display: none; margin-bottom: 10px">
+            Et voila!
+        </p>
+        <p id="playAgain" style="display: none; margin-bottom: 40px">
+            Wanna play again?
+        </p>
+        <p id="v-button" style="display: none; margin-bottom: 20px">
+            <a class="yep" href="jslesson42_hanoi.html">Yep!</a>
+        </p>
+    </div>
+    <div id="scoreBoard">
+        <p class="score" id="moves">
+            Move count: 0
+        </p>
+    </div>
+    <div id="help" onclick="help()">
+        <p class="score">
+            Help! I'm stuck.
+        </p>
+    </div>
+    <table id="table">
+        <tbody>
+        <tr id="row0">
+            <td id="0-0" ondragover="allowDrop(event)" ondrop="drop(event, 0, 0)">
+                <img src="red-ring.png" id="ring1" draggable="true" ondragstart="drag(event, 1)">
+            </td>
+            <td id="0-1" ondragover="allowDrop(event)" ondrop="drop(event, 1, 0)">
+            </td>
+            <td id="0-2" ondragover="allowDrop(event)" ondrop="drop(event, 2, 0)">
+            </td>
+        </tr>
+        <tr id="row1">
+            <td id="1-0" ondragover="allowDrop(event)" ondrop="drop(event, 0, 1)">
+                <img src="orange-ring.png" id="ring2" draggable="false" ondragstart="drag(event, 2)">
+            </td>
+            <td id="1-1" ondragover="allowDrop(event)" ondrop="drop(event, 1, 1)">
+            </td>
+            <td id="1-2" ondragover="allowDrop(event)" ondrop="drop(event, 2, 1)">
+            </td>
+        </tr>
+        <tr id="row2">
+            <td id="2-0" ondragover="allowDrop(event)" ondrop="drop(event, 0, 2)">
+                <img src="yellow-ring.png" id="ring3" draggable="false" ondragstart="drag(event, 3)">
+            </td>
+            <td id="2-1" ondragover="allowDrop(event)" ondrop="drop(event, 1, 2)">
+            </td>
+            <td id="2-2" ondragover="allowDrop(event)" ondrop="drop(event, 2, 2)">
+            </td>
+        </tr>
+        <tr id="row3">
+            <td id="3-0" ondragover="allowDrop(event)" ondrop="drop(event, 0, 3)">
+                <img src="green-ring.png" id="ring4" draggable="false" ondragstart="drag(event, 4)">
+            </td>
+            <td id="3-1" ondragover="allowDrop(event)" ondrop="drop(event, 1, 3)">
+            </td>
+            <td id="3-2" ondragover="allowDrop(event)" ondrop="drop(event, 2, 3)">
+            </td>
+        </tr>
+        <tr id="row4">
+            <td id="4-0" ondragover="allowDrop(event)" ondrop="drop(event, 0, 4)">
+                <img src="blue-ring.png" id="ring5" draggable="false" ondragstart="drag(event, 5)">
+            </td>
+            <td id="4-1" ondragover="allowDrop(event)" ondrop="drop(event, 1, 4)">
+            </td>
+            <td id="4-2" ondragover="allowDrop(event)" ondrop="drop(event, 2, 4)">
+            </td>
+        </tr>
+        <tr id="row5">
+            <td id="5-0" ondragover="allowDrop(event)" ondrop="drop(event, 0, 5)">
+                <img src="purple-ring.png" id="ring6" draggable="false" ondragstart="drag(event, 6)">
+            </td>
+            <td id="5-1" ondragover="allowDrop(event)" ondrop="drop(event, 1, 5)">
+            </td>
+            <td id="5-2" ondragover="allowDrop(event)" ondrop="drop(event, 2, 5)">
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    <div id="deadSpace"></div>
+</body>
+</html>
